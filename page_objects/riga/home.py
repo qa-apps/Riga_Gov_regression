@@ -1,6 +1,41 @@
 from __future__ import annotations
 
 from playwright.sync_api import Page, expect
+from ..base_page import BasePage
+
+
+class RigaHomePage(BasePage):
+    """Riga.lv home page."""
+
+    def open(self) -> None:  # type: ignore[override]
+        super().open("/")
+
+    def open_menu(self) -> None:
+        # Try common accessible patterns first
+        menu_btn = self.page.get_by_role("button", name=lambda s: "Izvēlne" in s or "Menu" in s)
+        if menu_btn.count() > 0:
+            menu_btn.first.click()
+
+    def header_links(self) -> int:
+        nav = self.page.get_by_role("navigation")
+        return nav.get_by_role("link").count()
+
+    def footer_links(self) -> int:
+        footer = self.page.locator("footer")
+        return footer.locator("a[href]").count()
+
+    def search(self, query: str) -> None:
+        # Riga search field can be dynamic; try role=searchbox first
+        input_box = self.page.get_by_role("textbox", name=lambda s: "Meklēt" in s or "Search" in s)
+        if input_box.count() == 0:
+            input_box = self.page.locator("input[type='search'], input[name*='search'], input[name*='mekl']")
+        input_box.first.fill(query)
+        input_box.first.press("Enter")
+        expect(self.page).to_have_url(lambda url: "search" in url or "meklet" in url.lower())
+
+from __future__ import annotations
+
+from playwright.sync_api import Page, expect
 
 
 class RigaHomePage:
