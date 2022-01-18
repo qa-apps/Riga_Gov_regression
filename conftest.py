@@ -16,6 +16,17 @@ def base_url() -> str:
     url = os.getenv("BASE_URL", "https://example.com").rstrip("/")
     return url
 
+@pytest.fixture(scope="session")
+def riga_base_url() -> str:
+    """Base URL for riga.lv tests."""
+    return os.getenv("RIGA_BASE_URL", "https://www.riga.lv").rstrip("/")
+
+
+@pytest.fixture(scope="session")
+def liveriga_base_url() -> str:
+    """Base URL for liveriga tests."""
+    return os.getenv("LIVERIGA_BASE_URL", "https://www.liveriga.com/lv").rstrip("/")
+
 
 @pytest.fixture(scope="session")
 def riga_base_url() -> str:
