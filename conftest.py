@@ -18,6 +18,27 @@ def base_url() -> str:
 
 
 @pytest.fixture(scope="session")
+def riga_base_url() -> str:
+    """Base URL for riga.lv tests."""
+    return os.getenv("RIGA_BASE_URL", "https://www.riga.lv").rstrip("/")
+
+
+@pytest.fixture(scope="session")
+def liveriga_base_url() -> str:
+    """Base URL for liveriga.com/lv tests."""
+    return os.getenv("LIVERIGA_BASE_URL", "https://www.liveriga.com/lv").rstrip("/")
+
+
+@pytest.fixture(scope="session")
+def crawl_limit() -> int:
+    """Maximum pages to crawl per test (env override)."""
+    try:
+        return int(os.getenv("CRAWL_LIMIT", "40"))
+    except ValueError:
+        return 40
+
+
+@pytest.fixture(scope="session")
 def browser_context_args() -> Dict[str, Any]:
     """Configure Playwright browser context via pytest-playwright hook."""
     record_video_dir = os.getenv("PW_VIDEO_DIR", "test-results/videos")
