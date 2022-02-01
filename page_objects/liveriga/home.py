@@ -1,4 +1,29 @@
 from __future__ import annotations
+
+from playwright.sync_api import Page, expect
+from ..base_page import BasePage
+
+
+class LiveRigaHomePage(BasePage):
+    """LiveRiga home page."""
+
+    def open(self) -> None:  # type: ignore[override]
+        super().open("/")
+
+    def open_menu(self) -> None:
+        menu_btn = self.page.get_by_role("button", name=lambda s: "Menu" in s or "Izvēlne" in s)
+        if menu_btn.count() > 0:
+            menu_btn.first.click()
+
+    def search(self, query: str) -> None:
+        input_box = self.page.get_by_role("textbox", name=lambda s: "Search" in s or "Meklēt" in s)
+        if input_box.count() == 0:
+            input_box = self.page.locator("input[type='search'], input[name*='search']")
+        input_box.first.fill(query)
+        input_box.first.press("Enter")
+        expect(self.page).to_have_url(lambda u: "search" in u or "mekl" in u.lower())
+
+from __future__ import annotations
 from playwright.sync_api import Page
 
 
