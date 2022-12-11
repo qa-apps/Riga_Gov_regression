@@ -45,4 +45,33 @@ Useful options:
 - `conftest.py` — shared fixtures and env handling
 - `pytest.ini` — pytest configuration
 
+### Environment variables
+
+- `RIGA_BASE_URL` default `https://www.riga.lv`
+- `LIVERIGA_BASE_URL` default `https://www.liveriga.com/lv`
+- `PW_VIDEO_DIR` directory for Playwright videos
+- `LOCALE`, `TIMEZONE_ID` used by context
+
+### Running by site and markers
+
+```bash
+# Only Riga tests
+pytest tests/riga -q
+
+# Only LiveRiga tests
+pytest tests/liveriga -q
+
+# Security checks
+pytest -m security -q
+
+# Accessibility checks
+pytest -m a11y -q
+```
+
+### Notes
+
+- Crawlers restrict to in-domain links and throttle requests to avoid overloading servers.
+- External links with target=_blank are checked for `rel=\"noopener\"` or `rel=\"noreferrer\"`.
+
+
 
