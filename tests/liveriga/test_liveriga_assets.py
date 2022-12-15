@@ -13,7 +13,7 @@ def test_liveriga_images_are_available(context, page, liveriga_base_url) -> None
     imgs = collect_image_urls(page, liveriga_base_url)[:50]
     statuses = head_statuses(context, imgs)
     broken = [(u, s) for u, s in statuses if s == 0 or s >= 400]
-    assert len(broken) == 0, f\"Broken images: {broken}\"
+    assert len(broken) == 0, f"Broken images: {broken}"
 
 
 def test_liveriga_documents_are_downloadable(context, page, liveriga_base_url) -> None:
@@ -24,130 +24,84 @@ def test_liveriga_documents_are_downloadable(context, page, liveriga_base_url) -
         return
     statuses = head_statuses(context, docs)
     broken = [(u, s) for u, s in statuses if s == 0 or s >= 400]
-    assert len(broken) == 0, f\"Broken documents: {broken}\"
+    assert len(broken) == 0, f"Broken documents: {broken}"
 
 
+def test_home_nav_links_have_text(page, liveriga_base_url) -> None:
+    page.goto(liveriga_base_url)
+    nav = page.get_by_role("navigation")
+    links = nav.get_by_role("link")
+    for i in range(min(30, links.count())):
+        txt = (links.nth(i).text_content() or "").strip()
+        assert len(txt) > 0
 
+def test_home_nav_links_reachable(context, page, liveriga_base_url) -> None:
+    page.goto(liveriga_base_url)
+    nav = page.get_by_role("navigation")
+    anchors = nav.locator("a[href]")
+    hrefs = []
+    for i in range(min(30, anchors.count())):
+        h = anchors.nth(i).get_attribute("href")
+        if h: hrefs.append(page.evaluate("(u,b)=>new URL(u,b).toString()", h, liveriga_base_url))
+    from utils.crawl import check_urls
+    statuses = check_urls(context, hrefs)
+    broken = [(u,s) for u,s in statuses if s==0 or s>=400]
+    assert len(broken) == 0, f"Broken header links: {broken}"
 
-# AUTOGEN_MINLINES START
-__autogen_minlines_dataset__ = [
-    'autogen_0000',
-    'autogen_0001',
-    'autogen_0002',
-    'autogen_0003',
-    'autogen_0004',
-    'autogen_0005',
-    'autogen_0006',
-    'autogen_0007',
-    'autogen_0008',
-    'autogen_0009',
-    'autogen_0010',
-    'autogen_0011',
-    'autogen_0012',
-    'autogen_0013',
-    'autogen_0014',
-    'autogen_0015',
-    'autogen_0016',
-    'autogen_0017',
-    'autogen_0018',
-    'autogen_0019',
-    'autogen_0020',
-    'autogen_0021',
-    'autogen_0022',
-    'autogen_0023',
-    'autogen_0024',
-    'autogen_0025',
-    'autogen_0026',
-    'autogen_0027',
-    'autogen_0028',
-    'autogen_0029',
-    'autogen_0030',
-    'autogen_0031',
-    'autogen_0032',
-    'autogen_0033',
-    'autogen_0034',
-    'autogen_0035',
-    'autogen_0036',
-    'autogen_0037',
-    'autogen_0038',
-    'autogen_0039',
-    'autogen_0040',
-    'autogen_0041',
-    'autogen_0042',
-    'autogen_0043',
-    'autogen_0044',
-    'autogen_0045',
-    'autogen_0046',
-    'autogen_0047',
-    'autogen_0048',
-    'autogen_0049',
-    'autogen_0050',
-    'autogen_0051',
-    'autogen_0052',
-    'autogen_0053',
-    'autogen_0054',
-    'autogen_0055',
-    'autogen_0056',
-    'autogen_0057',
-    'autogen_0058',
-    'autogen_0059',
-    'autogen_0060',
-    'autogen_0061',
-    'autogen_0062',
-    'autogen_0063',
-    'autogen_0064',
-    'autogen_0065',
-    'autogen_0066',
-    'autogen_0067',
-    'autogen_0068',
-    'autogen_0069',
-    'autogen_0070',
-    'autogen_0071',
-    'autogen_0072',
-    'autogen_0073',
-    'autogen_0074',
-    'autogen_0075',
-    'autogen_0076',
-    'autogen_0077',
-    'autogen_0078',
-    'autogen_0079',
-    'autogen_0080',
-    'autogen_0081',
-    'autogen_0082',
-    'autogen_0083',
-    'autogen_0084',
-    'autogen_0085',
-    'autogen_0086',
-    'autogen_0087',
-    'autogen_0088',
-    'autogen_0089',
-    'autogen_0090',
-    'autogen_0091',
-    'autogen_0092',
-    'autogen_0093',
-    'autogen_0094',
-    'autogen_0095',
-    'autogen_0096',
-    'autogen_0097',
-    'autogen_0098',
-    'autogen_0099',
-    'autogen_0100',
-    'autogen_0101',
-    'autogen_0102',
-    'autogen_0103',
-    'autogen_0104',
-    'autogen_0105',
-    'autogen_0106',
-    'autogen_0107',
-    'autogen_0108',
-    'autogen_0109',
-    'autogen_0110',
-    'autogen_0111',
-    'autogen_0112',
-    'autogen_0113',
-    'autogen_0114'
-]
+def test_home_click_first_five_nav_links(page, liveriga_base_url) -> None:
+    page.goto(liveriga_base_url)
+    nav = page.get_by_role("navigation")
+    anchors = nav.locator("a[href]")
+    for i in range(min(5, anchors.count())):
+        href = anchors.nth(i).get_attribute("href")
+        if not href: continue
+        with page.expect_navigation():
+            anchors.nth(i).click(force=True)
+        assert page.url.startswith("https://")
+        page.goto(liveriga_base_url)
 
-def test_autogen_minlines_dataset_present():
-    assert len(__autogen_minlines_dataset__) >= 1
-# AUTOGEN_MINLINES END
+def test_home_images_have_dimensions(page, liveriga_base_url) -> None:
+    page.goto(liveriga_base_url)
+    bad = page.evaluate("""() => Array.from(document.images)
+          .filter(i => (i.naturalWidth||0)===0 || (i.naturalHeight||0)===0)
+          .map(i=>i.src)""")
+    assert len(bad) == 0
+
+def test_home_assets_status(context, page, liveriga_base_url) -> None:
+    page.goto(liveriga_base_url)
+    css = page.eval_on_selector_all("link[rel='stylesheet'][href]", "(n)=>n.map(x=>x.href)")
+    js = page.eval_on_selector_all("script[src]", "(n)=>n.map(x=>x.src)")
+    from utils.assets import head_statuses
+    statuses = head_statuses(context, [*css[:20], *js[:20]])
+    broken = [(u,s) for u,s in statuses if s==0 or s>=400]
+    assert len(broken) == 0
+
+def test_home_has_canonical_or_og(page, liveriga_base_url) -> None:
+    page.goto(liveriga_base_url)
+    canon = page.locator("link[rel='canonical']")
+    ogurl = page.locator("meta[property='og:url']")
+    assert canon.count()>0 or ogurl.count()>0
+
+def test_home_keyboard_nav(page, liveriga_base_url) -> None:
+    page.goto(liveriga_base_url)
+    nav = page.get_by_role("navigation")
+    first = nav.get_by_role("link").first
+    first.focus()
+    assert first.evaluate("el => document.activeElement === el")
+    for _ in range(5): page.keyboard.press("Tab")
+    assert page.evaluate("document.activeElement !== null")
+
+def test_home_external_blank_noopener(page, liveriga_base_url) -> None:
+    page.goto(liveriga_base_url)
+    nav = page.get_by_role("navigation")
+    ext = nav.locator("a[target='_blank']")
+    for i in range(ext.count()):
+        rel = (ext.nth(i).get_attribute("rel") or "").lower()
+        assert "noopener" in rel or "noreferrer" in rel
+
+def test_logo_links_home(page, liveriga_base_url) -> None:
+    page.goto(liveriga_base_url)
+    logo = page.locator("a[href='/'], a.logo, a[aria-label*='home' i]")
+    if logo.count()==0: return
+    logo.first.click()
+    assert page.url.startswith(liveriga_base_url)
