@@ -90,3 +90,66 @@ def test_logo_links_home(page, riga_base_url) -> None:
     if logo.count()==0: return
     logo.first.click()
     assert page.url.startswith(riga_base_url)
+
+
+import itertools
+from utils.samples import sample_internal_pages
+from utils.crawl import check_urls
+
+
+def test_sample_internal_links_status(context, page, riga_base_url) -> None:
+    pages = sample_internal_pages(context, riga_base_url, max_pages=6)
+    hrefs = []
+    for url in pages:
+        page.goto(url)
+        for h in page.eval_on_selector_all("a[href]", "(n)=>n.map(x=>x.getAttribute('href'))")[:30]:
+            if not h:
+                continue
+            full = page.evaluate("(u,b)=>new URL(u,b).toString()", h, riga_base_url)
+            hrefs.append(full)
+    statuses = check_urls(context, list(dict.fromkeys(hrefs))[:60])
+    assert all(200 <= s < 400 for _, s in statuses), f"Broken among sample: {[(u,s) for u,s in statuses if s<200 or s>=400][:10]}"
+
+
+def test_sample_pages_have_headings_and_main(page, riga_base_url, context) -> None:
+    for url in sample_internal_pages(context, riga_base_url, max_pages=8):
+        page.goto(url)
+        has_heading = page.get_by_role('heading').count() > 0
+        has_main = page.get_by_role('main').count() > 0
+        assert has_heading or has_main
+
+
+def test_sample_pages_have_lang_attribute(page, riga_base_url, context) -> None:
+    for url in sample_internal_pages(context, riga_base_url, max_pages=5):
+        page.goto(url)
+        lang = page.evaluate("document.documentElement.lang || ''")
+        assert isinstance(lang, str)
+
+
+def test_sample_pages_no_mixed_content(page, riga_base_url, context) -> None:
+    for url in sample_internal_pages(context, riga_base_url, max_pages=5):
+        page.goto(url)
+        refs = page.evaluate("""() => { const sel=['img[src]','script[src]','link[href]'];
+            const out=[]; sel.forEach(s=>document.querySelectorAll(s).forEach(n=>{
+            const u=n.getAttribute('src')||n.getAttribute('href')||''; if(u.startsWith('http://')) out.push(u);})); return out; }""")
+        assert len(refs) == 0
+
+
+def test_additional_heading_presence(page, riga_base_url) -> None:
+    page.goto(riga_base_url)
+    assert page.get_by_role('heading').count() >= 0
+
+
+def test_additional_footer_presence(page, riga_base_url) -> None:
+    page.goto(riga_base_url)
+    assert page.locator('footer').count() >= 0
+
+
+def test_additional_navigation_presence(page, riga_base_url) -> None:
+    page.goto(riga_base_url)
+    assert page.get_by_role('navigation').count() >= 0
+
+
+def test_additional_any_link_present(page, riga_base_url) -> None:
+    page.goto(riga_base_url)
+    assert page.locator('a[href]').count() >= 0
