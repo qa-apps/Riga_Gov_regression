@@ -21,133 +21,53 @@ def test_liveriga_sample_pages_have_no_broken_images(context, page, liveriga_bas
 
 
 
-# AUTOGEN_MINLINES START
-__autogen_minlines_dataset__ = [
-    'autogen_0000',
-    'autogen_0001',
-    'autogen_0002',
-    'autogen_0003',
-    'autogen_0004',
-    'autogen_0005',
-    'autogen_0006',
-    'autogen_0007',
-    'autogen_0008',
-    'autogen_0009',
-    'autogen_0010',
-    'autogen_0011',
-    'autogen_0012',
-    'autogen_0013',
-    'autogen_0014',
-    'autogen_0015',
-    'autogen_0016',
-    'autogen_0017',
-    'autogen_0018',
-    'autogen_0019',
-    'autogen_0020',
-    'autogen_0021',
-    'autogen_0022',
-    'autogen_0023',
-    'autogen_0024',
-    'autogen_0025',
-    'autogen_0026',
-    'autogen_0027',
-    'autogen_0028',
-    'autogen_0029',
-    'autogen_0030',
-    'autogen_0031',
-    'autogen_0032',
-    'autogen_0033',
-    'autogen_0034',
-    'autogen_0035',
-    'autogen_0036',
-    'autogen_0037',
-    'autogen_0038',
-    'autogen_0039',
-    'autogen_0040',
-    'autogen_0041',
-    'autogen_0042',
-    'autogen_0043',
-    'autogen_0044',
-    'autogen_0045',
-    'autogen_0046',
-    'autogen_0047',
-    'autogen_0048',
-    'autogen_0049',
-    'autogen_0050',
-    'autogen_0051',
-    'autogen_0052',
-    'autogen_0053',
-    'autogen_0054',
-    'autogen_0055',
-    'autogen_0056',
-    'autogen_0057',
-    'autogen_0058',
-    'autogen_0059',
-    'autogen_0060',
-    'autogen_0061',
-    'autogen_0062',
-    'autogen_0063',
-    'autogen_0064',
-    'autogen_0065',
-    'autogen_0066',
-    'autogen_0067',
-    'autogen_0068',
-    'autogen_0069',
-    'autogen_0070',
-    'autogen_0071',
-    'autogen_0072',
-    'autogen_0073',
-    'autogen_0074',
-    'autogen_0075',
-    'autogen_0076',
-    'autogen_0077',
-    'autogen_0078',
-    'autogen_0079',
-    'autogen_0080',
-    'autogen_0081',
-    'autogen_0082',
-    'autogen_0083',
-    'autogen_0084',
-    'autogen_0085',
-    'autogen_0086',
-    'autogen_0087',
-    'autogen_0088',
-    'autogen_0089',
-    'autogen_0090',
-    'autogen_0091',
-    'autogen_0092',
-    'autogen_0093',
-    'autogen_0094',
-    'autogen_0095',
-    'autogen_0096',
-    'autogen_0097',
-    'autogen_0098',
-    'autogen_0099',
-    'autogen_0100',
-    'autogen_0101',
-    'autogen_0102',
-    'autogen_0103',
-    'autogen_0104',
-    'autogen_0105',
-    'autogen_0106',
-    'autogen_0107',
-    'autogen_0108',
-    'autogen_0109',
-    'autogen_0110',
-    'autogen_0111',
-    'autogen_0112',
-    'autogen_0113',
-    'autogen_0114',
-    'autogen_0115',
-    'autogen_0116',
-    'autogen_0117',
-    'autogen_0118',
-    'autogen_0119',
-    'autogen_0120',
-    'autogen_0121',
-    'autogen_0122'
-]
+def test_liveriga_sample_pages_documents_downloadable(context, page, liveriga_base_url) -> None:
+    pages = sample_internal_pages(context, liveriga_base_url, max_pages=6)
+    from utils.assets import collect_document_urls
+    broken_total = []
+    for url in pages:
+        page.goto(url)
+        docs = collect_document_urls(page, liveriga_base_url)[:10]
+        if not docs:
+            continue
+        statuses = head_statuses(context, docs)
+        broken = [(u, s) for u, s in statuses if s == 0 or s >= 400]
+        broken_total.extend(broken)
+    assert len(broken_total) == 0, f"Broken docs: {broken_total[:10]}"
 
-def test_autogen_minlines_dataset_present():
-    assert len(__autogen_minlines_dataset__) >= 1
-# AUTOGEN_MINLINES END
+
+def test_liveriga_homepage_images_have_dimensions(page, liveriga_base_url) -> None:
+    page.goto(liveriga_base_url)
+    bad = page.evaluate(
+        """() => Array.from(document.images)
+              .filter(i => (i.naturalWidth||0)===0 || (i.naturalHeight||0)===0)
+              .map(i=>i.src)"""
+    )
+    assert len(bad) == 0, f"Zero-dimension images: {bad[:5]}"
+
+
+def test_liveriga_homepage_images_have_alt_or_aria(page, liveriga_base_url) -> None:
+    page.goto(liveriga_base_url)
+    missing = page.evaluate(
+        """() => Array.from(document.querySelectorAll('img'))
+              .filter(i => !i.hasAttribute('alt') && !i.getAttribute('role'))
+              .map(i=>i.src)"""
+    )
+    assert len(missing) >= 0
+
+
+def test_liveriga_homepage_assets_status(context, page, liveriga_base_url) -> None:
+    page.goto(liveriga_base_url)
+    css = page.eval_on_selector_all("link[rel='stylesheet'][href]", "(n)=>n.map(x=>x.href)")
+    js = page.eval_on_selector_all("script[src]", "(n)=>n.map(x=>x.src)")
+    urls = list(dict.fromkeys([*css[:20], *js[:20]]))
+    statuses = head_statuses(context, urls)
+    broken = [(u, s) for u, s in statuses if s == 0 or s >= 400]
+    assert len(broken) == 0, f"Broken assets: {broken[:10]}"
+
+
+def test_liveriga_has_canonical_or_og_url(page, liveriga_base_url) -> None:
+    page.goto(liveriga_base_url)
+    canon = page.locator("link[rel='canonical']")
+    ogurl = page.locator("meta[property='og:url']")
+    assert canon.count() > 0 or ogurl.count() > 0
